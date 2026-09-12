@@ -1,5 +1,5 @@
 // FiveM Vehicle Car Menü Script
-// NUI Handler
+// NUI Handler mit Datenbank Support
 
 const musicMenu = document.getElementById('musicMenu');
 const youtubeLink = document.getElementById('youtubeLink');
@@ -8,20 +8,78 @@ const cancelBtn = document.getElementById('cancelBtn');
 const musicPlayer = document.getElementById('musicPlayer');
 const playerInfo = document.getElementById('playerInfo');
 const stopBtn = document.getElementById('stopBtn');
+const savedMusicList = document.getElementById('savedMusicList');
 
 let currentPlayer = null;
+let savedMusicLinks = [];
 
 // Menu öffnen
-function openMusicMenu() {
+function openMusicMenu(data) {
     musicMenu.classList.remove('hidden');
     youtubeLink.value = '';
     youtubeLink.focus();
+    
+    // Gespeicherte Musik anzeigen
+    if (data && data.savedMusic) {
+        displaySavedMusic(data.savedMusic);
+    }
 }
 
 // Menu schließen
 function closeMusicMenu() {
     musicMenu.classList.add('hidden');
     youtubeLink.blur();
+}
+
+// Gespeicherte Musik anzeigen
+function displaySavedMusic(musicArray) {
+    savedMusicLinks = musicArray || [];
+    
+    if (!savedMusicList) return;
+    
+    savedMusicList.innerHTML = '';
+    
+    if (musicArray && musicArray.length > 0) {
+        musicArray.forEach((link, index) => {
+            const linkElement = document.createElement('div');
+            linkElement.className = 'saved-music-item';
+            linkElement.innerHTML = `
+                <span class="music-link-text" title="${link}">${link.substring(0, 50)}...</span>
+                <div>
+                    <button class="music-link-btn" onclick="loadSavedMusic('${link}')">Abspielen</button>
+                    <button class="music-link-delete" onclick="deleteSavedMusic('${link}')">✕</button>
+                </div>
+            `;
+            savedMusicList.appendChild(linkElement);
+        });
+    } else {
+        savedMusicList.innerHTML = '<p style="color: #808080;">Keine gespeicherten Links</p>';
+    }
+}
+
+// Gespeicherte Musik laden und abspielen
+function loadSavedMusic(link) {
+    youtubeLink.value = link;
+    submitBtn.click();
+}
+
+// Gespeicherte Musik löschen
+function deleteSavedMusic(link) {
+    if (confirm('Möchtest du diesen Link wirklich löschen?\n\n' + link)) {
+        fetch(`https://${GetParentResourceName()}/carMenu:deleteMusic`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                youtubeLink: link
+            })
+        });
+        
+        // Lokal entfernen
+        savedMusicLinks = savedMusicLinks.filter(l => l !== link);
+        displaySavedMusic(savedMusicLinks);
+    }
 }
 
 // Musik abspielen
@@ -129,7 +187,7 @@ window.addEventListener('message', function(event) {
     const data = event.data;
     
     if (data.type === 'openMusicMenu') {
-        openMusicMenu();
+        openMusicMenu(data);
     } else if (data.type === 'closeMusicMenu') {
         closeMusicMenu();
     } else if (data.type === 'playMusic') {
@@ -146,4 +204,4 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-console.log('%c[Vehicle Car Menü] NUI Script geladen!', 'color: #ffd700; font-weight: bold;');
+console.log('%c[Vehicle Car Menü] NUI Script mit Datenbank Support geladen!', 'color: #ffd700; font-weight: bold;');
