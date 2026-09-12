@@ -11,13 +11,20 @@
         <div class="menu-container">
             <div class="menu-header">
                 <h2>🎵 Musik Menü 🎵</h2>
-                <p class="subtitle">Gebe einen YouTube Link ein</p>
+                <p class="subtitle">Gebe einen YouTube Link ein oder wähle einen gespeicherten</p>
             </div>
             
             <div class="menu-content">
                 <div class="input-group">
                     <label for="youtubeLink">YouTube Link:</label>
                     <input type="text" id="youtubeLink" placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+                
+                <div class="saved-music-section">
+                    <label>📋 Gespeicherte Links:</label>
+                    <div id="savedMusicList" class="saved-music-list">
+                        <p style="color: #808080;">Keine gespeicherten Links</p>
+                    </div>
                 </div>
                 
                 <div class="button-group">
