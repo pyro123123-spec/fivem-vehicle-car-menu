@@ -1,9 +1,10 @@
 -- FiveM Vehicle Car Menü Script
--- Main Client File
+-- Main Client File mit Datenbank Support
 
 local menuOpen = false
 local musicMenuOpen = false
 local currentMusic = nil
+local savedMusic = {}
 
 -- Menü öffnen mit N Taste
 Citizen.CreateThread(function()
@@ -38,6 +39,10 @@ end)
 
 function OpenCarMenu()
     menuOpen = true
+    
+    -- Gespeicherte Musik laden
+    TriggerServerEvent('carMenu:loadSavedMusic')
+    
     TriggerEvent('chat:addMessage', {
         color = {0, 255, 0},
         multiline = true,
@@ -72,9 +77,10 @@ function OpenMusicMenu()
     -- Sound abspielen
     PlaySoundFrontend(-1, "CONFIRM_BEEP", "HUD_MINI_GAME_SOUNDSET", true)
     
-    -- NUI zeigen
+    -- NUI zeigen mit gespeicherten Links
     SendNUIMessage({
-        type = 'openMusicMenu'
+        type = 'openMusicMenu',
+        savedMusic = savedMusic
     })
     SetNuiFocus(true, true)
 end
@@ -97,10 +103,14 @@ RegisterNuiCallbackType('musicSubmit')
 on_submitMusic = function(data, cb)
     if data.youtubeLink and data.youtubeLink ~= "" then
         currentMusic = data.youtubeLink
+        
+        -- In Datenbank speichern
+        TriggerServerEvent('carMenu:saveMusic', data.youtubeLink)
+        
         TriggerEvent('chat:addMessage', {
             color = {0, 255, 0},
             multiline = true,
-            args = {"Musik", "Musiklink hinzugefügt: " .. data.youtubeLink}
+            args = {"Musik", "Musiklink hinzugefügt und gespeichert: " .. data.youtubeLink}
         })
         
         -- Musik starten
@@ -113,6 +123,19 @@ on_submitMusic = function(data, cb)
     CloseMusicMenu()
     cb('ok')
 end
+
+-- Gespeicherte Musik vom Server empfangen
+RegisterNetEvent('carMenu:receiveSavedMusic')
+AddEventHandler('carMenu:receiveSavedMusic', function(music)
+    savedMusic = music
+    if #music > 0 then
+        TriggerEvent('chat:addMessage', {
+            color = {0, 200, 255},
+            multiline = true,
+            args = {"Musik", #music .. " gespeicherte Links geladen!"}
+        })
+    end
+end)
 
 -- Fahrzeug Sounds
 function PlayVehicleSound(soundName)
@@ -138,3 +161,15 @@ exports('playMusicMenu', function()
         OpenMusicMenu()
     end
 end)
+
+exports('playMusicFromLink', function(link)
+    PlayMusicFromLink(link)
+end)
+
+function PlayMusicFromLink(link)
+    currentMusic = link
+    SendNUIMessage({
+        type = 'playMusic',
+        link = link
+    })
+end
